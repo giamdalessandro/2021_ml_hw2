@@ -1,2 +1,5 @@
 ## IDE
 .vscode
+
+## small data
+small_data/__pycache__/

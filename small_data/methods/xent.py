@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from typing import Callable
+from typing import Callable, Tuple
 
 from .common import BasicAugmentation
 
@@ -20,7 +20,7 @@ class CrossEntropyClassifier(BasicAugmentation):
 			A loss function taking as arguments all model outputs followed by
 			target class labels and returning a single loss value.
         """
-        return nn.CrossEntropyLoss(reduction='mean')
+        return nn.CrossEntropyLoss(reduction='mean') # xent is default
 
     def get_optimizer(self, model: nn.Module, max_epochs: int, max_iter: int) -> Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler]:
         """ Instantiates an optimizer and learning rate schedule.

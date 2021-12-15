@@ -3,100 +3,134 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class BasicBlock(nn.Module):
 
-    def __init__(self, in_planes, out_planes, stride, dropRate=0.0):
-        super(BasicBlock, self).__init__()
-        self.bn1 = nn.BatchNorm2d(in_planes)
-        self.relu1 = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_planes)
-        self.relu2 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=1,
-                               padding=1, bias=False)
-        self.droprate = dropRate
-        self.equalInOut = (in_planes == out_planes)
-        self.convShortcut = (not self.equalInOut) and nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride,
-                               padding=0, bias=False) or None
-
-    def forward(self, x):
-        if not self.equalInOut:
-            x = self.relu1(self.bn1(x))
-        else:
-            out = self.relu1(self.bn1(x))
-        out = self.relu2(self.bn2(self.conv1(out if self.equalInOut else x)))
-        if self.droprate > 0:
-            out = F.dropout(out, p=self.droprate, training=self.training)
-        out = self.conv2(out)
-        return torch.add(x if self.equalInOut else self.convShortcut(x), out)
-
-
-class NetworkBlock(nn.Module):
-
-    def __init__(self, nb_layers, in_planes, out_planes, block, stride, dropRate=0.0):
-        super(NetworkBlock, self).__init__()
-        self.layer = self._make_layer(block, in_planes, out_planes, nb_layers, stride, dropRate)
-
-    def _make_layer(self, block, in_planes, out_planes, nb_layers, stride, dropRate):
-        layers = []
-        for i in range(int(nb_layers)):
-            layers.append(block(i == 0 and in_planes or out_planes, out_planes, i == 0 and stride or 1, dropRate))
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.layer(x)
-
-
-
-class WideResNet(nn.Module):
-    """ 
-    Whole ensemble network class.
+class depthwise_separable_conv(nn.Module):
     """
+    Xception depthwise separable convolution module, in both `original` and `modified` configuration.
+    """
+    def __init__(self, n_in, n_out, kernel_size, padding, bias=False):
+        super(depthwise_separable_conv, self).__init__()
+        self.depthwise = nn.Conv2d(n_in, n_in, kernel_size=kernel_size, padding=padding, groups=n_in, bias=bias)
+        self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
 
-    def __init__(self, depth, num_classes, input_channels=3, widen_factor=1, dropRate=0.0, block=BasicBlock):
-        super(WideResNet, self).__init__()
-        nChannels = [16, 16*widen_factor, 32*widen_factor, 64*widen_factor]
-        assert((depth - 4) % 6 == 0)
-        n = (depth - 4) / 6
-        # 1st conv before any network block
-        self.conv1 = nn.Conv2d(input_channels, nChannels[0], kernel_size=3, stride=1,
-                               padding=1, bias=False)
-        # 1st block
-        self.block1 = NetworkBlock(n, nChannels[0], nChannels[1], block, 1, dropRate)
-        # 2nd block
-        self.block2 = NetworkBlock(n, nChannels[1], nChannels[2], block, 2, dropRate)
-        # 3rd block
-        self.block3 = NetworkBlock(n, nChannels[2], nChannels[3], block, 2, dropRate)
-        # global average pooling and classifier
-        self.bn1 = nn.BatchNorm2d(nChannels[3])
-        self.relu = nn.ReLU(inplace=True)
-        self.fc = nn.Linear(nChannels[3], num_classes)
+    def forward(self, x):
+        out = self.depthwise(x)
+        out = self.pointwise(out)
+        return out
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                m.bias.data.zero_()
-                
-    @staticmethod
-    def get_classifiers():
-        return ['wrn-16-8', 'wrn-16-10', 'wrn-22-8', 'wrn-22-10', 'wrn-28-10', 'wrn-28-12']
-    
-    @classmethod
-    def build_classifier(cls, arch: str, num_classes: int, input_channels: int):
-        _, depth, widen_factor = arch.split('-')
-        cls_instance = cls(int(depth), num_classes, input_channels=input_channels, widen_factor=int(widen_factor))
-        return cls_instance
+
+class Xception(nn.Module):
+    def __init__(self, input_channel, num_classes=10):
+        super(Xception, self).__init__()
+        
+        # Entry Flow
+        self.entry_flow_1 = nn.Sequential(
+            nn.Conv2d(input_channel, 32, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(True),
+            
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(True)
+        )
+        
+        self.entry_flow_2 = nn.Sequential(
+            depthwise_separable_conv(64, 128, 3, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(True),
+            
+            depthwise_separable_conv(128, 128, 3, 1),
+            nn.BatchNorm2d(128),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+        
+        self.entry_flow_2_residual = nn.Conv2d(64, 128, kernel_size=1, stride=2, padding=0)
+        
+        self.entry_flow_3 = nn.Sequential(
+            nn.ReLU(True),
+            depthwise_separable_conv(128, 256, 3, 1),
+            nn.BatchNorm2d(256),
+            
+            nn.ReLU(True),
+            depthwise_separable_conv(256, 256, 3, 1),
+            nn.BatchNorm2d(256),
+            
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+        
+        self.entry_flow_3_residual = nn.Conv2d(128, 256, kernel_size=1, stride=2, padding=0)
+        
+        self.entry_flow_4 = nn.Sequential(
+            nn.ReLU(True),
+            depthwise_separable_conv(256, 728, 3, 1),
+            nn.BatchNorm2d(728),
+            
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 728, 3, 1),
+            nn.BatchNorm2d(728),
+            
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+        
+        self.entry_flow_4_residual = nn.Conv2d(256, 728, kernel_size=1, stride=2, padding=0)
+        
+        # Middle Flow
+        self.middle_flow = nn.Sequential(
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 728, 3, 1),
+            nn.BatchNorm2d(728),
+            
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 728, 3, 1),
+            nn.BatchNorm2d(728),
+            
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 728, 3, 1),
+            nn.BatchNorm2d(728)
+        )
+        
+        # Exit Flow
+        self.exit_flow_1 = nn.Sequential(
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 728, 3, 1),
+            nn.BatchNorm2d(728),
+            
+            nn.ReLU(True),
+            depthwise_separable_conv(728, 1024, 3, 1),
+            nn.BatchNorm2d(1024),
+            
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+        self.exit_flow_1_residual = nn.Conv2d(728, 1024, kernel_size=1, stride=2, padding=0)
+        self.exit_flow_2 = nn.Sequential(
+            depthwise_separable_conv(1024, 1536, 3, 1),
+            nn.BatchNorm2d(1536),
+            nn.ReLU(True),
+            
+            depthwise_separable_conv(1536, 2048, 3, 1),
+            nn.BatchNorm2d(2048),
+            nn.ReLU(True)
+        )
+        
+        self.linear = nn.Linear(2048, num_classes)
         
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.block1(out)
-        out = self.block2(out)
-        out = self.block3(out)
-        out = self.relu(self.bn1(out))
-        out = F.adaptive_avg_pool2d(out, 1).flatten(1)
-        return self.fc(out)
+        entry_out1 = self.entry_flow_1(x)
+        entry_out2 = self.entry_flow_2(entry_out1) + self.entry_flow_2_residual(entry_out1)
+        entry_out3 = self.entry_flow_3(entry_out2) + self.entry_flow_3_residual(entry_out2)
+        entry_out = self.entry_flow_4(entry_out3) + self.entry_flow_4_residual(entry_out3)
+        
+        middle_out = self.middle_flow(entry_out) + entry_out
+        
+        for i in range(7):
+          middle_out = self.middle_flow(middle_out) + middle_out
+
+        exit_out1 = self.exit_flow_1(middle_out) + self.exit_flow_1_residual(middle_out)
+        exit_out2 = self.exit_flow_2(exit_out1)
+
+        exit_avg_pool = F.adaptive_avg_pool2d(exit_out2, (1, 1))                
+        exit_avg_pool_flat = exit_avg_pool.view(exit_avg_pool.size(0), -1)
+
+        output = self.linear(exit_avg_pool_flat)
+        
+        return output

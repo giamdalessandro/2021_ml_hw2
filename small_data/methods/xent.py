@@ -10,7 +10,6 @@ class CrossEntropyClassifier(BasicAugmentation):
 
     See `BasicAugmentation` for a documentation of the available hyper-parameters.
     """
-
     def get_loss_function(self) -> Callable:
         """ Returns a loss function.
 		

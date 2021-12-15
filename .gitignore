@@ -7,3 +7,5 @@ small_data/architectures/__pycache__/
 small_data/datasets/__pycache__/
 small_data/methods/__pycache__/
 
+## tests result
+tests/

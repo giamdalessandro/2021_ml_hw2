@@ -22,7 +22,11 @@ class CrossEntropyClassifier(BasicAugmentation):
         """
         return nn.CrossEntropyLoss(reduction='mean') # xent is default
 
-    def get_optimizer(self, model: nn.Module, max_epochs: int, max_iter: int) -> Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler]:
+    def get_optimizer(self, 
+        model: nn.Module, 
+        max_epochs: int, 
+        max_iter: int
+    ) -> Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler._LRScheduler]:
         """ Instantiates an optimizer and learning rate schedule.
 
         Parameters
@@ -39,9 +43,9 @@ class CrossEntropyClassifier(BasicAugmentation):
         optimizer : torch.optim.Optimizer
         lr_schedule : torch.optim.lr_scheduler._LRScheduler
         """
-        optimizer = torch.optim.Adam(model.parameters(), 
+        optimizer = torch.optim.SGD(model.parameters(), 
 			lr=self.hparams['lr'], 
-			# momentum=self.hparams['momentum'], 
+			momentum=self.hparams['momentum'], 
 			weight_decay=self.hparams['weight_decay']
 		)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_iter)
@@ -49,6 +53,9 @@ class CrossEntropyClassifier(BasicAugmentation):
         
     @staticmethod
     def default_hparams() -> dict:
+        """
+        default -> { 'lr' : 0.01, 'weight_decay' : 0.001 }
+        """
         hparams_dict = {
             **super(CrossEntropyClassifier, CrossEntropyClassifier).default_hparams(),
             'momentum' : 0.9

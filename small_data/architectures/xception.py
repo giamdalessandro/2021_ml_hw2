@@ -4,27 +4,38 @@ import torch.nn.functional as F
 
 
 
-class depthwise_separable_conv(nn.Module):
+class depthwiseSeparableConv(nn.Module):
     """
-    Xception depthwise separable convolution module, in both `original` and `modified` configuration.
+    Depthwise Separable Convolution module, in `modified` Xception configuration.
     """
-    def __init__(self, n_in, n_out, kernel_size, padding, bias=False):
-        super(depthwise_separable_conv, self).__init__()
+    def __init__(self, n_in, n_out, kernel_size, padding, bias=False, mode: str="modified"):
+        """
+        - mode: 'original' or 'modified' depthwise separable convolution.
+        """
+        super(depthwiseSeparableConv, self).__init__()
         self.depthwise = nn.Conv2d(n_in, n_in, kernel_size=kernel_size, padding=padding, groups=n_in, bias=bias)
         self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
+        self.mode = mode
 
     def forward(self, x):
-        out = self.depthwise(x)
-        out = self.pointwise(out)
+        if self.mode == "modified":
+            out = self.pointwise(x)
+            out = self.depthwise(out)
+        else:
+            # original depthwise spearable convolution, performs 
+            # the depthwise convolution before the pointwise convolution
+            out = self.depthwise(x)
+            out = self.pointwise(out)
         return out
 
 
-class Xception(nn.Module):
-    def __init__(self, input_channel, num_classes=10):
-        super(Xception, self).__init__()
-        
-        # Entry Flow
-        self.entry_flow_1 = nn.Sequential(
+class EntryFlow(nn.Module):
+    """
+    Xception Entry Flow module.
+    """
+    def __init__(self, input_channel):
+        super(EntryFlow, self).__init__()
+        self.block_1 = nn.Sequential(
             nn.Conv2d(input_channel, 32, kernel_size=3, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(32),
             nn.ReLU(True),
@@ -34,103 +45,159 @@ class Xception(nn.Module):
             nn.ReLU(True)
         )
         
-        self.entry_flow_2 = nn.Sequential(
-            depthwise_separable_conv(64, 128, 3, 1),
+        self.block_2 = nn.Sequential(
+            depthwiseSeparableConv(64, 128, 3, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(True),
             
-            depthwise_separable_conv(128, 128, 3, 1),
+            depthwiseSeparableConv(128, 128, 3, 1),
             nn.BatchNorm2d(128),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.entry_flow_2_residual = nn.Conv2d(64, 128, kernel_size=1, stride=2, padding=0)
+        self.block_2_residual = nn.Conv2d(64, 128, kernel_size=1, stride=2, padding=0)
         
-        self.entry_flow_3 = nn.Sequential(
+        self.block_3 = nn.Sequential(
             nn.ReLU(True),
-            depthwise_separable_conv(128, 256, 3, 1),
+            depthwiseSeparableConv(128, 256, 3, 1),
             nn.BatchNorm2d(256),
             
             nn.ReLU(True),
-            depthwise_separable_conv(256, 256, 3, 1),
+            depthwiseSeparableConv(256, 256, 3, 1),
             nn.BatchNorm2d(256),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.entry_flow_3_residual = nn.Conv2d(128, 256, kernel_size=1, stride=2, padding=0)
+        self.block_3_residual = nn.Conv2d(128, 256, kernel_size=1, stride=2, padding=0)
         
-        self.entry_flow_4 = nn.Sequential(
+        self.block_4 = nn.Sequential(
             nn.ReLU(True),
-            depthwise_separable_conv(256, 728, 3, 1),
+            depthwiseSeparableConv(256, 728, 3, 1),
             nn.BatchNorm2d(728),
             
             nn.ReLU(True),
-            depthwise_separable_conv(728, 728, 3, 1),
+            depthwiseSeparableConv(728, 728, 3, 1),
             nn.BatchNorm2d(728),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.entry_flow_4_residual = nn.Conv2d(256, 728, kernel_size=1, stride=2, padding=0)
-        
-        # Middle Flow
-        self.middle_flow = nn.Sequential(
+        self.block_4_residual = nn.Conv2d(256, 728, kernel_size=1, stride=2, padding=0)
+
+    def forward(self, x):
+        out1 = self.block_1(x)
+        out2 = self.block_2(out1) + self.block_2_residual(out1)
+        out3 = self.block_3(out2) + self.block_3_residual(out2)
+        out = self.block_4(out3) + self.block_4_residual(out3)
+        return out
+
+
+class MiddleFlow(nn.Module):
+    """
+    Xception Middle Flow module.
+    """
+    def __init__(self):
+        super(MiddleFlow, self).__init__()
+        self.activation     = nn.ReLU(True)
+        self.separable_conv = depthwiseSeparableConv(728, 728, 3, 1)
+        self.normalization  = nn.BatchNorm2d(728)
+    
+    def forward(self, x):
+        # first block
+        out1 = self.activation(x)
+        out1 = self.separable_conv(out1)
+        out1 = self.normalization(out1)
+
+        # first block
+        out2 = self.activation(out1)
+        out2 = self.separable_conv(out2)
+        out2 = self.normalization(out2)
+
+        # first block
+        out3 = self.activation(out2)
+        out3 = self.separable_conv(out3)
+        out = self.normalization(out3) + x
+
+        return out
+
+
+class ExitFlow(nn.Module):
+    """
+    Xception Exit Flow module without the fully connected layers at the end.
+    """
+    def __init__(self, num_classes: int=10):
+        super(ExitFlow, self).__init__()
+        self.block_1 = nn.Sequential(
             nn.ReLU(True),
-            depthwise_separable_conv(728, 728, 3, 1),
+            depthwiseSeparableConv(728, 728, 3, 1),
             nn.BatchNorm2d(728),
             
             nn.ReLU(True),
-            depthwise_separable_conv(728, 728, 3, 1),
-            nn.BatchNorm2d(728),
-            
-            nn.ReLU(True),
-            depthwise_separable_conv(728, 728, 3, 1),
-            nn.BatchNorm2d(728)
-        )
-        
-        # Exit Flow
-        self.exit_flow_1 = nn.Sequential(
-            nn.ReLU(True),
-            depthwise_separable_conv(728, 728, 3, 1),
-            nn.BatchNorm2d(728),
-            
-            nn.ReLU(True),
-            depthwise_separable_conv(728, 1024, 3, 1),
+            depthwiseSeparableConv(728, 1024, 3, 1),
             nn.BatchNorm2d(1024),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
-        self.exit_flow_1_residual = nn.Conv2d(728, 1024, kernel_size=1, stride=2, padding=0)
-        self.exit_flow_2 = nn.Sequential(
-            depthwise_separable_conv(1024, 1536, 3, 1),
+        self.block_1_residual = nn.Conv2d(728, 1024, kernel_size=1, stride=2, padding=0)
+        self.block_2 = nn.Sequential(
+            depthwiseSeparableConv(1024, 1536, 3, 1),
             nn.BatchNorm2d(1536),
             nn.ReLU(True),
             
-            depthwise_separable_conv(1536, 2048, 3, 1),
+            depthwiseSeparableConv(1536, 2048, 3, 1),
             nn.BatchNorm2d(2048),
             nn.ReLU(True)
         )
-        
-        self.linear = nn.Linear(2048, num_classes)
-        
+    
     def forward(self, x):
-        entry_out1 = self.entry_flow_1(x)
-        entry_out2 = self.entry_flow_2(entry_out1) + self.entry_flow_2_residual(entry_out1)
-        entry_out3 = self.entry_flow_3(entry_out2) + self.entry_flow_3_residual(entry_out2)
-        entry_out = self.entry_flow_4(entry_out3) + self.entry_flow_4_residual(entry_out3)
-        
-        middle_out = self.middle_flow(entry_out) + entry_out
-        
-        for i in range(7):
-          middle_out = self.middle_flow(middle_out) + middle_out
+        out1 = self.block_1(x) + self.block_1_residual(x)
+        out2 = self.block_2(out1)
 
-        exit_out1 = self.exit_flow_1(middle_out) + self.exit_flow_1_residual(middle_out)
-        exit_out2 = self.exit_flow_2(exit_out1)
+        avg_pool = F.adaptive_avg_pool2d(out2, (1, 1))                
+        # flatten the output
+        output = avg_pool.view(avg_pool.size(0), -1)
 
-        exit_avg_pool = F.adaptive_avg_pool2d(exit_out2, (1, 1))                
-        exit_avg_pool_flat = exit_avg_pool.view(exit_avg_pool.size(0), -1)
+        return output
 
-        output = self.linear(exit_avg_pool_flat)
+
+class Xception(nn.Module):
+    """
+    Xception architecture pytorch module.
+    """
+    def __init__(self, in_channel, num_classes: int=10, middle_rep: int=8):
+        super(Xception, self).__init__()
+        self.entry_flow  = EntryFlow(input_channel=in_channel)
+        self.middle_flow = MiddleFlow()
+        self.exit_flow   = ExitFlow(num_classes=num_classes)
+
+        self.fc = nn.Linear(2048, num_classes)
+        self.middle_rep  = middle_rep 
+
+    @staticmethod
+    def get_classifiers():
+        # arch-depth-widenFactor
+        return ['xc-8-4', 'xc-4-4', 'xc-12-4']
+    
+    @classmethod
+    def build_classifier(cls, arch: str, num_classes: int, input_channels: int):
+        _, depth, narrowing = arch.split('-')
+        cls_instance = cls(input_channels=input_channels, num_classes=num_classes, middle_rep=int(depth))
+        return cls_instance
+
+    def forward(self, x):
+        # entry flow
+        entry_out = self.entry_flow(x) 
+
+        # middle flow
+        middle_out = self.middle_flow(entry_out)
+        for i in range(self.middle_rep-1):
+            middle_out = self.middle_flow(middle_out)
         
+        # exit flow
+        exit_output = self.exit_flow(middle_out)
+        
+        # fully connected layers
+        output = self.fc(exit_output)
+
         return output

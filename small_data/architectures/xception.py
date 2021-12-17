@@ -13,9 +13,13 @@ class depthwiseSeparableConv(nn.Module):
         - mode: 'original' or 'modified' depthwise separable convolution.
         """
         super(depthwiseSeparableConv, self).__init__()
-        self.depthwise = nn.Conv2d(n_in, n_in, kernel_size=kernel_size, padding=padding, groups=n_in, bias=bias)
-        self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
         self.mode = mode
+        if self.mode == "modified":
+            self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
+            self.depthwise = nn.Conv2d(n_out, n_out, kernel_size=kernel_size, padding=padding, groups=n_out, bias=bias)
+        else:
+            self.depthwise = nn.Conv2d(n_in, n_in, kernel_size=kernel_size, padding=padding, groups=n_in, bias=bias)
+            self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
 
     def forward(self, x):
         if self.mode == "modified":
@@ -164,9 +168,9 @@ class Xception(nn.Module):
     """
     Xception architecture pytorch module.
     """
-    def __init__(self, in_channel, num_classes: int=10, middle_rep: int=8, widen_factor: int=8):
+    def __init__(self, in_channels, num_classes: int=10, middle_rep: int=8, widen_factor: int=8):
         super(Xception, self).__init__()
-        self.entry_flow  = EntryFlow(input_channel=in_channel, widen_factor=widen_factor)
+        self.entry_flow  = EntryFlow(input_channel=in_channels, widen_factor=widen_factor)
         self.middle_flow = MiddleFlow(widen_factor=widen_factor)
         self.exit_flow   = ExitFlow(widen_factor=widen_factor)
 

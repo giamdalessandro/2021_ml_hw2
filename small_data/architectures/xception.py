@@ -176,9 +176,19 @@ class Xception(nn.Module):
 
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top
-            nn.Linear(256*widen_factor, 256*widen_factor),   
-            nn.Linear(256*widen_factor, num_classes)   
+            nn.Linear(256*widen_factor, 128*widen_factor),   
+            nn.Linear(128*widen_factor, num_classes)   
         )
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.bias.data.zero_()
+                
 
     @staticmethod
     def get_classifiers():

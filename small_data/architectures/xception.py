@@ -33,57 +33,57 @@ class EntryFlow(nn.Module):
     """
     Xception Entry Flow module.
     """
-    def __init__(self, input_channel):
+    def __init__(self, input_channel, widen_factor: int):
         super(EntryFlow, self).__init__()
         self.block_1 = nn.Sequential(
-            nn.Conv2d(input_channel, 32, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(input_channel, 4*widen_factor, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(4*widen_factor),
             nn.ReLU(True),
             
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(4*widen_factor, 8*widen_factor, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(8*widen_factor),
             nn.ReLU(True)
         )
         
         self.block_2 = nn.Sequential(
-            depthwiseSeparableConv(64, 128, 3, 1),
-            nn.BatchNorm2d(128),
+            depthwiseSeparableConv(8*widen_factor, 16*widen_factor, 3, 1),
+            nn.BatchNorm2d(16*widen_factor),
             nn.ReLU(True),
             
-            depthwiseSeparableConv(128, 128, 3, 1),
-            nn.BatchNorm2d(128),
+            depthwiseSeparableConv(16*widen_factor, 16*widen_factor, 3, 1),
+            nn.BatchNorm2d(16*widen_factor),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.block_2_residual = nn.Conv2d(64, 128, kernel_size=1, stride=2, padding=0)
+        self.block_2_residual = nn.Conv2d(8*widen_factor, 16*widen_factor, kernel_size=1, stride=2, padding=0)
         
         self.block_3 = nn.Sequential(
             nn.ReLU(True),
-            depthwiseSeparableConv(128, 256, 3, 1),
-            nn.BatchNorm2d(256),
+            depthwiseSeparableConv(16*widen_factor, 32*widen_factor, 3, 1),
+            nn.BatchNorm2d(32*widen_factor),
             
             nn.ReLU(True),
-            depthwiseSeparableConv(256, 256, 3, 1),
-            nn.BatchNorm2d(256),
+            depthwiseSeparableConv(32*widen_factor, 32*widen_factor, 3, 1),
+            nn.BatchNorm2d(32*widen_factor),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.block_3_residual = nn.Conv2d(128, 256, kernel_size=1, stride=2, padding=0)
+        self.block_3_residual = nn.Conv2d(16*widen_factor, 32*widen_factor, kernel_size=1, stride=2, padding=0)
         
         self.block_4 = nn.Sequential(
             nn.ReLU(True),
-            depthwiseSeparableConv(256, 728, 3, 1),
-            nn.BatchNorm2d(728),
+            depthwiseSeparableConv(32*widen_factor, 91*widen_factor, 3, 1),
+            nn.BatchNorm2d(91*widen_factor),
             
             nn.ReLU(True),
-            depthwiseSeparableConv(728, 728, 3, 1),
-            nn.BatchNorm2d(728),
+            depthwiseSeparableConv(91*widen_factor, 91*widen_factor, 3, 1),
+            nn.BatchNorm2d(91*widen_factor),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
         
-        self.block_4_residual = nn.Conv2d(256, 728, kernel_size=1, stride=2, padding=0)
+        self.block_4_residual = nn.Conv2d(32*widen_factor, 91*widen_factor, kernel_size=1, stride=2, padding=0)
 
     def forward(self, x):
         out1 = self.block_1(x)
@@ -97,11 +97,11 @@ class MiddleFlow(nn.Module):
     """
     Xception Middle Flow module.
     """
-    def __init__(self):
+    def __init__(self, widen_factor: int):
         super(MiddleFlow, self).__init__()
         self.activation     = nn.ReLU(True)
-        self.separable_conv = depthwiseSeparableConv(728, 728, 3, 1)
-        self.normalization  = nn.BatchNorm2d(728)
+        self.separable_conv = depthwiseSeparableConv(91*widen_factor, 91*widen_factor, 3, 1)
+        self.normalization  = nn.BatchNorm2d(91*widen_factor)
     
     def forward(self, x):
         # first block
@@ -126,27 +126,27 @@ class ExitFlow(nn.Module):
     """
     Xception Exit Flow module without the fully connected layers at the end.
     """
-    def __init__(self, num_classes: int=10):
+    def __init__(self, widen_factor: int):
         super(ExitFlow, self).__init__()
         self.block_1 = nn.Sequential(
             nn.ReLU(True),
-            depthwiseSeparableConv(728, 728, 3, 1),
-            nn.BatchNorm2d(728),
+            depthwiseSeparableConv(91*widen_factor, 91*widen_factor, 3, 1),
+            nn.BatchNorm2d(91*widen_factor),
             
             nn.ReLU(True),
-            depthwiseSeparableConv(728, 1024, 3, 1),
-            nn.BatchNorm2d(1024),
+            depthwiseSeparableConv(91*widen_factor, 128*widen_factor, 3, 1),
+            nn.BatchNorm2d(128*widen_factor),
             
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         )
-        self.block_1_residual = nn.Conv2d(728, 1024, kernel_size=1, stride=2, padding=0)
+        self.block_1_residual = nn.Conv2d(91*widen_factor, 128*widen_factor, kernel_size=1, stride=2, padding=0)
         self.block_2 = nn.Sequential(
-            depthwiseSeparableConv(1024, 1536, 3, 1),
-            nn.BatchNorm2d(1536),
+            depthwiseSeparableConv(128*widen_factor, 192*widen_factor, 3, 1),
+            nn.BatchNorm2d(192*widen_factor),
             nn.ReLU(True),
             
-            depthwiseSeparableConv(1536, 2048, 3, 1),
-            nn.BatchNorm2d(2048),
+            depthwiseSeparableConv(192*widen_factor, 256*widen_factor, 3, 1),
+            nn.BatchNorm2d(256*widen_factor),
             nn.ReLU(True)
         )
     
@@ -157,7 +157,6 @@ class ExitFlow(nn.Module):
         avg_pool = F.adaptive_avg_pool2d(out2, (1, 1))                
         # flatten the output
         output = avg_pool.view(avg_pool.size(0), -1)
-
         return output
 
 
@@ -165,31 +164,41 @@ class Xception(nn.Module):
     """
     Xception architecture pytorch module.
     """
-    def __init__(self, in_channel, num_classes: int=10, middle_rep: int=8):
+    def __init__(self, in_channel, num_classes: int=10, middle_rep: int=8, widen_factor: int=8):
         super(Xception, self).__init__()
-        self.entry_flow  = EntryFlow(input_channel=in_channel)
-        self.middle_flow = MiddleFlow()
-        self.exit_flow   = ExitFlow(num_classes=num_classes)
+        self.entry_flow  = EntryFlow(input_channel=in_channel, widen_factor=widen_factor)
+        self.middle_flow = MiddleFlow(widen_factor=widen_factor)
+        self.exit_flow   = ExitFlow(widen_factor=widen_factor)
 
-        self.fc = nn.Linear(2048, num_classes)
+        self.fc = nn.Linear(256*widen_factor, num_classes)
         self.middle_rep  = middle_rep 
 
     @staticmethod
     def get_classifiers():
-        # arch-depth-widenFactor
-        return ['xc-8-4', 'xc-4-4', 'xc-12-4']
+        """
+        Classifier is specified with a string of dash separated values, 
+        representing `arch-depth-widenFactor` of the network. In this implementation 
+        I consider the `depth` as the number of repetition of the `Middle Flow` Xception 
+        module (8 times in the original paper).
+        """
+        return ['xc-8-8', 'xc-8-2', 'xc-4-4', 'xc-12-4']
     
     @classmethod
     def build_classifier(cls, arch: str, num_classes: int, input_channels: int):
-        _, depth, narrowing = arch.split('-')
-        cls_instance = cls(input_channels=input_channels, num_classes=num_classes, middle_rep=int(depth))
+        _, depth, widen = arch.split('-')
+        cls_instance = cls(
+            input_channels=input_channels, 
+            num_classes=num_classes,
+            middle_rep=int(depth), 
+            widen_factor=int(widen)
+        )
         return cls_instance
 
     def forward(self, x):
         # entry flow
         entry_out = self.entry_flow(x) 
 
-        # middle flow
+        # middle flow, repeated 'depth' times
         middle_out = self.middle_flow(entry_out)
         for i in range(self.middle_rep-1):
             middle_out = self.middle_flow(middle_out)
@@ -197,7 +206,7 @@ class Xception(nn.Module):
         # exit flow
         exit_output = self.exit_flow(middle_out)
         
-        # fully connected layers
+        # fully-connected top layers
         output = self.fc(exit_output)
 
         return output

@@ -170,8 +170,8 @@ class Xception(nn.Module):
         self.middle_flow = MiddleFlow(widen_factor=widen_factor)
         self.exit_flow   = ExitFlow(widen_factor=widen_factor)
 
-        self.fc = nn.Linear(256*widen_factor, num_classes)
-        self.middle_rep  = middle_rep 
+        self.middle_rep  = middle_rep    # depth
+        self.fc = nn.Linear(256*widen_factor, num_classes)   # fc top
 
     @staticmethod
     def get_classifiers():

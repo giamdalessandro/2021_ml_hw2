@@ -176,8 +176,8 @@ class Xception(nn.Module):
 
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top
-            nn.Linear(256*widen_factor, 128*widen_factor),   
-            nn.Linear(128*widen_factor, num_classes)   
+            nn.Linear(256*widen_factor, num_classes) # 128*widen_factor),   
+            #nn.Linear(128*widen_factor, num_classes)   
         )
 
         for m in self.modules():
@@ -188,7 +188,7 @@ class Xception(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
-                
+
 
     @staticmethod
     def get_classifiers():

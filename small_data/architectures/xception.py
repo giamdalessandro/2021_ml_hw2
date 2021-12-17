@@ -227,3 +227,9 @@ class Xception(nn.Module):
         output = self.fc(exit_output)
 
         return output
+
+
+if __name__ == "__main__":
+    net = Xception(in_channels=3)
+    for idx, m in enumerate(net.modules()):
+        print(idx, '->', m)

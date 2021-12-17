@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 class depthwiseSeparableConv(nn.Module):
     """
-    Depthwise Separable Convolution module, in `modified` Xception configuration.
+    Depthwise Separable Convolution module, `modified` Xception configuration as default.
     """
     def __init__(self, n_in, n_out, kernel_size, padding, bias=False, mode: str="modified"):
         """
@@ -175,7 +175,10 @@ class Xception(nn.Module):
         self.exit_flow   = ExitFlow(widen_factor=widen_factor)
 
         self.middle_rep  = middle_rep    # depth
-        self.fc = nn.Linear(256*widen_factor, num_classes)   # fc top
+        self.fc = nn.Sequential(         # fc top
+            nn.Linear(256*widen_factor, 256*widen_factor),   
+            nn.Linear(256*widen_factor, num_classes)   
+        )
 
     @staticmethod
     def get_classifiers():

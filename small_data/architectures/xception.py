@@ -149,8 +149,8 @@ class ExitFlow(nn.Module):
             nn.BatchNorm2d(192*widen_factor),
             nn.ReLU(True),
             
-            depthwiseSeparableConv(192*widen_factor, 256*widen_factor, 3, 1),
-            nn.BatchNorm2d(256*widen_factor),
+            depthwiseSeparableConv(192*widen_factor, 256*widen_factor, 3, 1),   # was 256
+            nn.BatchNorm2d(256*widen_factor),                                   # was 256
             nn.ReLU(True)
         )
     

@@ -2,15 +2,16 @@ import os
 import json
 import time
 
+PLOT = True
 
 # params of trainig
 params = {
-	"arch"       : "xc-4-4",
+	"arch"       : "xc-8-8",
 	"rand-shift" : 8,
-	"epochs"     : 10,
+	"epochs"     : 100,
 	"batch-size" : 10,  
 	"lr"         : 4.5e-2,  
-	"wd"         : 3.0e-5,   
+	"wd"         : 1.0e-5,   
 	"momentum"   : 0.9,   
 	"eval-step"  : 10,
 }
@@ -19,6 +20,7 @@ params["history"] = save_path + ".json"
 params["save"] = save_path + "_model.pth" 
 
 # training
+print(f"testing model {params['history'][8:-5]} ...")
 os.system(f"python3 scripts/train.py  cifair10 \
 --architecture {params['arch']} \
 --rand-shift {params['rand-shift']} \
@@ -33,7 +35,7 @@ os.system(f"python3 scripts/train.py  cifair10 \
 
 # plot history
 time.sleep(1)
-os.system(f"python3 scripts/plot_training_history.py {params['history']}")
+if PLOT: os.system(f"python3 scripts/plot_training_history.py {params['history']}")
 
 # auto-log
 with open("./tests/auto_log.txt", "a") as fp:

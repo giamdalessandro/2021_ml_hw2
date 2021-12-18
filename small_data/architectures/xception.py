@@ -40,11 +40,11 @@ class EntryFlow(nn.Module):
     def __init__(self, input_channel, widen_factor: int):
         super(EntryFlow, self).__init__()
         self.block_1 = nn.Sequential(
-            nn.Conv2d(input_channel, 4*widen_factor, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(4*widen_factor),
+            nn.Conv2d(input_channel, 16, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(16),
             nn.ReLU(True),
             
-            nn.Conv2d(4*widen_factor, 8*widen_factor, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(16, 8*widen_factor, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(8*widen_factor),
             nn.ReLU(True)
         )
@@ -158,24 +158,25 @@ class ExitFlow(nn.Module):
         out1 = self.block_1(x) + self.block_1_residual(x)
         out2 = self.block_2(out1)
 
-        avg_pool = F.adaptive_avg_pool2d(out2, (1, 1))                
-        # flatten the output
-        output = avg_pool.view(avg_pool.size(0), -1)
-        return output
+        avg_pool = F.adaptive_avg_pool2d(out2, 1).flatten(1)                
+        ## flatten the output
+        #avg_pool = F.adaptive_avg_pool2d(out2, (1, 1))                
+        #output = avg_pool.view(avg_pool.size(0), -1)
+        return avg_pool
 
 
 class Xception(nn.Module):
     """
     Xception architecture pytorch module.
     """
-    def __init__(self, in_channels, num_classes: int=10, middle_rep: int=8, widen_factor: int=8):
+    def __init__(self, in_channels: int=3, num_classes: int=10, middle_rep: int=8, widen_factor: int=8):
         super(Xception, self).__init__()
         self.entry_flow  = EntryFlow(input_channel=in_channels, widen_factor=widen_factor)
         self.middle_flow = MiddleFlow(widen_factor=widen_factor)
         self.exit_flow   = ExitFlow(widen_factor=widen_factor)
 
         self.middle_rep  = middle_rep    # depth
-        self.fc = nn.Sequential(         # fc top
+        self.fc = nn.Sequential(         # fc top (optional)
             nn.Linear(256*widen_factor, num_classes),
             nn.Dropout(0.5)   
         )
@@ -198,7 +199,7 @@ class Xception(nn.Module):
         I consider the `depth` as the number of repetition of the `Middle Flow` Xception 
         module (8 times in the original paper).
         """
-        return ['xc-8-8', 'xc-8-2', 'xc-4-4', 'xc-4-2', 'xc-6-2', 'xc-6-4']
+        return ['xc-8-8','xc-8-4','xc-8-2','xc-4-8','xc-4-4','xc-4-2','xc-6-2','xc-6-4']
     
     @classmethod
     def build_classifier(cls, arch: str, num_classes: int, input_channels: int):
@@ -224,9 +225,9 @@ class Xception(nn.Module):
         exit_output = self.exit_flow(middle_out)
         
         # fully-connected top layers
-        output = self.fc(exit_output)
+        # output = self.fc(exit_output)
 
-        return output
+        return exit_output
 
 
 if __name__ == "__main__":

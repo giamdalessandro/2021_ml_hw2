@@ -14,6 +14,7 @@ class depthwiseSeparableConv(nn.Module):
         """
         super(depthwiseSeparableConv, self).__init__()
         self.mode = mode
+        self.droprate = 0.5
         if self.mode == "modified":
             self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
             self.depthwise = nn.Conv2d(n_out, n_out, kernel_size=kernel_size, padding=padding, groups=n_out, bias=bias)
@@ -30,6 +31,9 @@ class depthwiseSeparableConv(nn.Module):
             # the depthwise convolution before the pointwise convolution
             out = self.depthwise(x)
             out = self.pointwise(out)
+
+        if self.droprate > 0:
+            out = F.dropout(out, p=self.droprate, training=self.training)
         return out
 
 
@@ -178,9 +182,7 @@ class Xception(nn.Module):
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top (optional)
             nn.Dropout(0.5),
-            nn.Linear(256*widen_factor, 256*widen_factor),
-            nn.Dropout(0.5),
-            nn.Linear(256*widen_factor, num_classes)   
+            nn.Linear(256*widen_factor, num_classes)  
         )
 
         for m in self.modules():

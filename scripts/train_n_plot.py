@@ -6,16 +6,16 @@ PLOT = True
 
 # params of trainig
 params = {
-	"arch"       : "xc-8-8",
-	"rand-shift" : 8,
-	"epochs"     : 100,
+	"arch"       : "wrn-16-10",
+	"rand-shift" : 4,
+	"epochs"     : 200,
 	"batch-size" : 10,  
-	"lr"         : 4.5e-2,  
-	"wd"         : 1.0e-5,   
+	"lr"         : 4.55e-3,  
+	"wd"         : 5.29e-3,   
 	"momentum"   : 0.9,   
-	"eval-step"  : 10,
+	"eval-step"  : 20,
 }
-save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD_lr{params['lr']}_wd{params['wd']}"
+save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
 params["history"] = save_path + ".json"
 params["save"] = save_path + "_model.pth" 
 

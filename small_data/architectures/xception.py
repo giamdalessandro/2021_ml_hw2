@@ -8,7 +8,7 @@ class depthwiseSeparableConv(nn.Module):
     """
     Depthwise Separable Convolution module, `modified` Xception configuration as default.
     """
-    def __init__(self, n_in, n_out, kernel_size, padding, bias=False, mode: str="modified"):
+    def __init__(self, n_in, n_out, kernel_size, padding, bias=False, mode: str="original"):
         """
         - mode: 'original' or 'modified' depthwise separable convolution.
         """

@@ -177,8 +177,10 @@ class Xception(nn.Module):
 
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top (optional)
-            nn.Linear(256*widen_factor, num_classes),
-            nn.Dropout(0.2)   
+            nn.Linear(256*widen_factor, 128*widen_factor),
+            nn.Dropout(0.7),
+            nn.Linear(128*widen_factor, num_classes),
+            nn.Dropout(0.5)   
         )
 
         for m in self.modules():

@@ -38,7 +38,7 @@ time.sleep(1)
 if PLOT: os.system(f"python3 scripts/plot_training_history.py {params['history']}")
 
 # auto-log
-with open("./tests/auto_log.txt", "a") as fp:
+with open(f"./logs/{params['arch'][:3]}-auto_log.txt", "a") as fp:
 	fp.write(f"\n\n########## {params['history'][8:-5]}")
 	fp.write("\n" + json.dumps(params))
 	fp.close()

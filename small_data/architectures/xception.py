@@ -200,7 +200,7 @@ class Xception(nn.Module):
         I consider the `depth` as the number of repetition of the `Middle Flow` Xception 
         module (8 times in the original paper).
         """
-        return ['xc-8-8','xc-8-4','xc-8-2','xc-4-8','xc-4-4','xc-4-2','xc-6-2','xc-6-4']
+        return ['xc-8-8','xc-8-4','xc-8-2','xc-4-8','xc-4-4','xc-4-2','xc-10-4','xc-10-8']
     
     @classmethod
     def build_classifier(cls, arch: str, num_classes: int, input_channels: int):

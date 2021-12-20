@@ -107,9 +107,9 @@ class LearningMethod(ABC):
             optimizer.zero_grad(set_to_none=True)
             output = model(X)
             if not isinstance(output, tuple):
-                output = (output,)
+                output = (output.float(),)
             
-            loss = criterion(*output.float(), y)
+            loss = criterion(*output, y)
             total_loss += loss.item() * len(X)
             total_acc += (output[0].argmax(dim=-1) == y).sum().item()
             num_samples += len(X)

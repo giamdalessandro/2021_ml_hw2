@@ -178,7 +178,7 @@ class Xception(nn.Module):
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top (optional)
             nn.Linear(256*widen_factor, num_classes),
-            nn.Dropout(0.5)   
+            nn.Dropout(0.2)   
         )
 
         for m in self.modules():
@@ -225,9 +225,9 @@ class Xception(nn.Module):
         exit_output = self.exit_flow(middle_out)
         
         # fully-connected top layers
-        # output = self.fc(exit_output)
+        output = self.fc(exit_output)
 
-        return exit_output
+        return output
 
 
 if __name__ == "__main__":

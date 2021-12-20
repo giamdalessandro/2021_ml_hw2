@@ -19,9 +19,8 @@ class CrossEntropyClassifier(BasicAugmentation):
 			A loss function taking as arguments all model outputs followed by
 			target class labels and returning a single loss value.
         """
-        #return nn.CrossEntropyLoss(reduction='mean') # xent is default
-        return nn.MSELoss(reduction='mean')
-
+        return nn.CrossEntropyLoss(reduction='mean') # xent is default
+        
     def get_optimizer(self, 
         model: nn.Module, 
         max_epochs: int, 

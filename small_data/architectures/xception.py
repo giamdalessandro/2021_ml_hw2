@@ -182,7 +182,7 @@ class Xception(nn.Module):
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top (optional)
             nn.Linear(256*widen_factor, num_classes),  
-            nn.Dropout(0.5)
+            #nn.Dropout(0.5)
         )
 
         for m in self.modules():
@@ -193,6 +193,7 @@ class Xception(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
+
 
 
     @staticmethod

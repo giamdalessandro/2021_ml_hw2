@@ -33,7 +33,7 @@ class depthwiseSeparableConv(nn.Module):
 
         #if self.droprate > 0:
         #    out = F.dropout(out, p=self.droprate, training=self.training)
-        #return out
+        return out
 
 
 class EntryFlow(nn.Module):

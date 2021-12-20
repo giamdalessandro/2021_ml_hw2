@@ -40,11 +40,11 @@ class EntryFlow(nn.Module):
     def __init__(self, input_channel, widen_factor: int):
         super(EntryFlow, self).__init__()
         self.block_1 = nn.Sequential(
-            nn.Conv2d(input_channel, 16, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(input_channel, 4*widen_factor, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(4*widen_factor),
             nn.ReLU(True),
             
-            nn.Conv2d(16, 8*widen_factor, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(4*widen_factor, 8*widen_factor, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(8*widen_factor),
             nn.ReLU(True)
         )
@@ -177,10 +177,9 @@ class Xception(nn.Module):
 
         self.middle_rep  = middle_rep    # depth
         self.fc = nn.Sequential(         # fc top (optional)
-            nn.Linear(256*widen_factor, 128*widen_factor),
-            nn.Dropout(0.7),
-            nn.Linear(128*widen_factor, num_classes),
-            nn.Dropout(0.5)   
+            nn.Linear(256*widen_factor, 256*widen_factor),
+            nn.Dropout(0.6),
+            nn.Linear(256*widen_factor, num_classes)   
         )
 
         for m in self.modules():

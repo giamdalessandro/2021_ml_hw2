@@ -14,7 +14,7 @@ class depthwiseSeparableConv(nn.Module):
         """
         super(depthwiseSeparableConv, self).__init__()
         self.mode = mode
-        self.droprate = 0.5
+        self.droprate = 0.2
         if self.mode == "modified":
             self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
             self.depthwise = nn.Conv2d(n_out, n_out, kernel_size=kernel_size, padding=padding, groups=n_out, bias=bias)

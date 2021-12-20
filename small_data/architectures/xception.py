@@ -14,7 +14,6 @@ class depthwiseSeparableConv(nn.Module):
         """
         super(depthwiseSeparableConv, self).__init__()
         self.mode = mode
-        self.droprate = 0.2
         if self.mode == "modified":
             self.pointwise = nn.Conv2d(n_in, n_out, kernel_size=1, bias=bias)
             self.depthwise = nn.Conv2d(n_out, n_out, kernel_size=kernel_size, padding=padding, groups=n_out, bias=bias)
@@ -32,9 +31,9 @@ class depthwiseSeparableConv(nn.Module):
             out = self.depthwise(x)
             out = self.pointwise(out)
 
-        if self.droprate > 0:
-            out = F.dropout(out, p=self.droprate, training=self.training)
-        return out
+        #if self.droprate > 0:
+        #    out = F.dropout(out, p=self.droprate, training=self.training)
+        #return out
 
 
 class EntryFlow(nn.Module):

@@ -229,7 +229,7 @@ class Xception(nn.Module):
         # fully-connected top layers
         output = self.fc(exit_output)
 
-        return exit_output
+        return output
 
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 ## IDE
 .vscode
 
+## optional dataset
+datasets/ARGOS/
+
 ## small data
 small_data/__pycache__/
 small_data/architectures/__pycache__/

@@ -6,14 +6,14 @@ PLOT = True
 
 # params of trainig
 params = {
-	"arch"       : "wrn-16-10",
+	"arch"       : "xc-8-4",
 	"rand-shift" : 4,
-	"epochs"     : 200,
+	"epochs"     : 100,
 	"batch-size" : 10,  
 	"lr"         : 4.55e-3,  
-	"wd"         : 5.29e-3,   
+	"wd"         : 5.0e-4,   
 	"momentum"   : 0.9,   
-	"eval-step"  : 20,
+	"eval-step"  : 10,
 }
 save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
 params["history"] = save_path + ".json"
@@ -22,6 +22,8 @@ params["save"] = save_path + "_model.pth"
 # training
 print(f"testing model {params['history'][8:-5]} ...")
 os.system(f"python3 scripts/train.py  cifair10 \
+--train-split batches.meta \
+--test-split test_batch \
 --architecture {params['arch']} \
 --rand-shift {params['rand-shift']} \
 --epochs {params['epochs']} \

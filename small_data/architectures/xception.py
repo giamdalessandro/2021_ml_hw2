@@ -1,3 +1,5 @@
+""" Xception implementation based on https://github.com/hoya012/pytorch-Xception """
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

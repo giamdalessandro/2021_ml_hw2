@@ -42,7 +42,7 @@ class CrossEntropyClassifier(BasicAugmentation):
         optimizer : torch.optim.Optimizer
         lr_schedule : torch.optim.lr_scheduler._LRScheduler
         """
-        optimizer = torch.optim.SGD(model.parameters(), 
+        optimizer = torch.optim.Adam(model.parameters(), 
 			lr=self.hparams['lr'], 
 			momentum=self.hparams['momentum'], 
 			weight_decay=self.hparams['weight_decay']

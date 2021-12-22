@@ -20,7 +20,7 @@ params = {
 	"momentum"   : 0.9,   
 	"eval-step"  : 10,
 }
-save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
+save_path = f"./tests/{params['arch']}_{params['epochs']}_Adam_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
 params["history"] = save_path + ".json"
 params["save"] = save_path + "_model.pth" 
 

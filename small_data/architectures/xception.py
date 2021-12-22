@@ -27,7 +27,7 @@ class depthwiseSeparableConv(nn.Module):
             out = self.depthwise(out)
         else:
             # original depthwise spearable convolution, performs 
-            # the depthwise convolution before the pointwise convolution
+            # the spatial convolution before the pointwise convolution
             out = self.depthwise(x)
             out = self.pointwise(out)
 
@@ -124,7 +124,7 @@ class MiddleFlow(nn.Module):
         # first block
         out3 = self.activation(out2)
         out3 = self.separable_conv(out3)
-        out = self.normalization(out3) + x
+        out = self.normalization(out3) + x  # adding the residual
 
         return out
 

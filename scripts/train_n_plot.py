@@ -1,3 +1,8 @@
+""" 
+Simple script I added to run the training, 
+  plot and log the results in one command.
+"""
+
 import os
 import json
 import time
@@ -6,7 +11,7 @@ PLOT = True
 
 # params of trainig
 params = {
-	"arch"       : "xc-8-4",
+	"arch"       : "xc-4-4",
 	"rand-shift" : 4,
 	"epochs"     : 100,
 	"batch-size" : 10,  
@@ -19,10 +24,10 @@ save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD_lr{params['lr']}_w
 params["history"] = save_path + ".json"
 params["save"] = save_path + "_model.pth" 
 
-# training
+# training (batches.meta)
 print(f"testing model {params['history'][8:-5]} ...")
 os.system(f"python3 scripts/train.py  cifair10 \
---train-split batches.meta \
+--train-split data_batch_1 \
 --test-split test_batch \
 --architecture {params['arch']} \
 --rand-shift {params['rand-shift']} \

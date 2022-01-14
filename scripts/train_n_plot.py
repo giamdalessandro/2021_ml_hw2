@@ -20,16 +20,17 @@ params = {
 	"momentum"   : 0.9,   
 	"eval-step"  : 10,
 }
-save_path = f"./tests/{params['arch']}_{params['epochs']}_Adam_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
+save_path = f"./tests/{params['arch']}_{params['epochs']}_SGD2_lr{params['lr']}_wd{params['wd']}_rand{params['rand-shift']}"
 params["history"] = save_path + ".json"
 params["save"] = save_path + "_model.pth" 
 
-# training (batches.meta)
+# training (batches.meta) --init-weights tests/xc-4-4_100_SGD_lr0.00455_wd0.0005_rand4_model.pth \
 print(f"testing model {params['history'][8:-5]} ...")
 os.system(f"python3 scripts/train.py  cifair10 \
---train-split data_batch_1 \
+--train-split data_batch_2 \
 --test-split test_batch \
 --architecture {params['arch']} \
+--init-weights tests/xc-4-4_100_SGD2_lr0.00455_wd0.0005_rand4_model.pth \
 --rand-shift {params['rand-shift']} \
 --epochs {params['epochs']} \
 --batch-size {params['batch-size']} \
